@@ -182,6 +182,7 @@ class Interface:
         pas = elementary.Entry(win)
         pas.line_wrap_set(False)
         pas.entry_set("password")
+        pas.password = True
         pas.input_panel_return_key_disabled = True
         pas.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         pas.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
