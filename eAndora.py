@@ -1,7 +1,10 @@
 """A Pandora Client Written in Python EFLs/Elm
 Uses VLC as a streaming backend
 By: Jeff Hoogland (JeffHoogland@Linux.com)
-Started: 12/20/12"""
+Started: 12/20/12
+
+
+"""
 
 import os
 import elementary
@@ -11,6 +14,7 @@ import evas
 import time
 import pandora
 import vlc
+import urllib
 
 class eAndora:
     def __init__( self ):
@@ -24,9 +28,12 @@ class eAndora:
         self.settings = {"username":"", "password":""}
         self.player = None
         self.skinName = "Default"
-        self.player = vlc.MediaListPlayer()
-        self.songlist = vlc.MediaList()
+        self.song = None
         self.songinfo = []
+        self.player = vlc.MediaPlayer()
+        self.event_manager = self.player.event_manager()
+        self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
+        self.counter = 0
 
     def setGUI( self, GUI):
         self.gui = GUI
@@ -50,7 +57,7 @@ class eAndora:
         self.player.pause()
 
     def skipSong( self ):
-        self.player.next()
+        self.nextSong("skip")
 
     def setStation( self, station ):
         self.curStation = pandora.Station(self.pandora, station)
@@ -61,6 +68,9 @@ class eAndora:
     def getStation( self ):
         return self.curStation
 
+    def getCurSongInfo( self ):
+        return self.songinfo[self.curSong]
+
     def getSongInfo( self ):
         return self.songinfo
 
@@ -70,11 +80,17 @@ class eAndora:
             if station['stationName'] == name:
                 return station
 
+    def getSongDuration( self ):
+        seconds = self.player.get_length() / 1000.0
+        mins = 0
+        while seconds >= 60:
+            seconds -= 60
+            mins += 1
+        return mins, seconds
+
     def clearSongs( self ):
-        for i in range(len(self.songinfo)-1):
-            self.songlist.remove_index(0)
+        self.song = None
         self.songinfo = []
-        self.player.set_media_list(self.songlist)
 
     def addSongs( self ):
         playlist = self.curStation.get_playlist()
@@ -83,10 +99,46 @@ class eAndora:
         	 "artist"	:	song.artist, \
         	 "album"	:	song.album, \
         	 "thumbnail"	:	song.artRadio, \
+             "url"      : str(song.audioUrl)
         	}
             self.songinfo.append(info)
-            self.songlist.add_media(str(song.audioUrl))
-        self.player.set_media_list(self.songlist)
+        if not self.song:
+            self.startPlaying()
+        self.gui.refreshInterface()
+
+    def startPlaying( self ):
+        info = self.songinfo[0]
+        self.curSong = 0
+        self.song = info['title']
+        self.player.set_media(vlc.Media(info['url']))
+        self.player.play()
+        self.gui.song_change()
+
+    def nextSong( self , event=False):
+        #print("Debug 1")
+        if self.player.is_playing():
+            self.player.stop()
+        else:
+            #print("Debug 11")
+            self.player = vlc.MediaPlayer()
+            self.event_manager = self.player.event_manager()
+            self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
+        #print("Debug 2")
+        self.curSong += 1
+        #print("Debug 2")
+        if self.curSong >= len(self.songinfo)-1:
+            #print("Debug 3")
+            self.addSongs()
+        #print("Debug 4")
+        info = self.songinfo[self.curSong]
+        self.song = info['title']
+        #print(info)
+        #print("Debug 5")
+        self.player.set_media(vlc.Media(info['url']))
+        #print("Debug 6")
+        self.player.play()
+        #print("Debug 7")
+        self.gui.song_change()
 
 class Interface:
 
@@ -95,6 +147,72 @@ class Interface:
         self.mainWindow = elementary.Window("table", elementary.ELM_WIN_BASIC)
         self.songList = elementary.List(self.mainWindow)
         self.stationButton = elementary.Button(self.mainWindow)
+        #self.stationDropdown = elementary.Toolbar(self.mainWindow)
+        self.tb = None
+        self.thumb = elementary.Button(self.mainWindow)
+        self.song = elementary.Button(self.mainWindow)
+        self.artist = elementary.Button(self.mainWindow)
+        self.album = elementary.Button(self.mainWindow)
+        self.counter = [elementary.Clock(self.mainWindow), elementary.Label(self.mainWindow)]
+
+    def song_change( self ):
+        info = self.ourPlayer.getCurSongInfo()
+        try:
+            os.remove('/tmp/albumart.jpg')
+        except:
+            pass
+        urllib.urlretrieve(str(info['thumbnail']), '/tmp/albumart.jpg')
+        ic = elementary.Icon(self.mainWindow)
+        ic.file_set('/tmp/albumart.jpg')
+        self.thumb.show()
+        self.thumb.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.thumb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        self.thumb.content_set(ic)
+        self.tb.pack(self.thumb, 2, 0, 2, 3)
+        self.thumb.show()
+
+        self.song.hide()
+        self.song.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.song.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        self.song.text_set("Song: %s"%info['title'])
+        self.tb.pack(self.song, 0, 0, 2, 1)
+        self.song.show()
+
+        self.artist.hide()
+        self.artist.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.artist.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        self.artist.text_set("Artist: %s"%info['artist'])
+        self.tb.pack(self.artist, 0, 1, 2, 1)
+        self.artist.show()
+
+        self.album.hide()
+        self.album.text_set("Album: %s"%info['album'])
+        self.album.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.album.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        self.tb.pack(self.album, 0, 2, 2, 1)
+        self.album.show()
+
+        self.counter[0].hide()
+        self.counter[0].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.counter[0].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        self.counter[0].show_seconds_set(True)
+        self.counter[0].time_set(0, 0, 0)
+        self.tb.pack(self.counter[0], 0, 3, 1, 1)
+        self.counter[0].show()
+
+        self.counter[1].hide()
+        self.counter[1].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.counter[1].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        time.sleep(0.5)
+        mins, seconds = self.ourPlayer.getSongDuration()
+        if seconds > 9:
+            self.counter[1].text_set("<b>/      %s : %s</b>"%(mins, int(seconds)))
+        else:
+            self.counter[1].text_set("<b>/      %s : 0%s</b>"%(mins, int(seconds)))
+        self.tb.pack(self.counter[1], 2, 3, 1, 1)
+        self.counter[1].show()
+
+        print("Hey look the song changed!")
 
     def close_window(self, bt, win):
         win.delete()
@@ -205,7 +323,7 @@ class Interface:
         tb.pack(bt, 1, 2, 1, 1)
         bt.show()
 
-        win.resize(640, 320)
+        win.resize(800, 300)
         win.show()
 
     def play_pause(self, bt):
@@ -227,7 +345,6 @@ class Interface:
         self.ourPlayer.setStation(self.ourPlayer.getStationFromName(item.text))
         self.ourPlayer.clearSongs()
         self.ourPlayer.addSongs()
-        self.ourPlayer.skipSong()
         self.ourPlayer.playSong()
         self.refreshInterface(clear=True)
         print(("ctxpopup item selected: %s" % (item.text)))
@@ -237,10 +354,12 @@ class Interface:
             self.songList.clear()
         songinfo = self.ourPlayer.getSongInfo()
         for song in songinfo:
-            self.songList.item_prepend("%s - %s"%(song['title'], song['artist']))
+            if songinfo.index(song) >= len(songinfo) - 4:
+                self.songList.item_prepend("%s - %s"%(song['title'], song['artist']))
         self.songList.show()
         self.songList.go()
         self.stationButton.text_set(str(self.ourPlayer.getStation().name))
+        self.stationButton.hide()
         self.stationButton.show()
 
     def item_new(self, cp, label, icon = None):
@@ -261,11 +380,12 @@ class Interface:
 
     def interface_clicked(self, obj):
         #self.ourPlayer.setGUI(self)
-        #self.ourPlayer.auth()
+        #self.ourPlayer.auth("jeffhoogland@linux.com", "")
         self.ourPlayer.setStation(self.ourPlayer.getStations()[0])
-        self.ourPlayer.addSongs()
-        self.ourPlayer.playSong()
         self.mainWindow.title_set("eAndora - Internet Radio")
+        ic = elementary.Icon(self.mainWindow)
+        ic.file_set("images/eAndora.png")
+        self.mainWindow.icon_object_set(ic)
         if obj is None:
             self.mainWindow.callback_delete_request_add(lambda o: elementary.exit())
 
@@ -274,20 +394,23 @@ class Interface:
         bg.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         bg.show()
 
-        tb = elementary.Table(self.mainWindow)
-        self.mainWindow.resize_object_add(tb)
-        tb.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        tb.show()
+        self.tb = elementary.Table(self.mainWindow)
+        self.mainWindow.resize_object_add(self.tb)
+        self.tb.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.tb.show()
 
         self.stationButton.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.stationButton.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         self.stationButton.callback_unpressed_add(self.station_selection)
-        tb.pack(self.stationButton, 0, 0, 2, 1)
+        self.tb.pack(self.stationButton, 4, 0, 2, 3)
+
+        """self.stationDropdown.homogeneous = False
+        self.stationDropdown.size_hint_weight_set(0.0, 0.0)
+        self.stationDropdown.size_hint_align_set(evas.EVAS_HINT_FILL, 0.0)"""
 
         self.songList.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.songList.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        tb.pack(self.songList, 0, 1, 2, 3)
-        self.refreshInterface()
+        self.tb.pack(self.songList, 0, 4, 4, 3)
 
         ic = elementary.Icon(self.mainWindow)
         ic.file_set("images/pause.png")
@@ -296,7 +419,7 @@ class Interface:
         bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         bt.content_set(ic)
         bt.callback_unpressed_add(self.play_pause)
-        tb.pack(bt, 2, 3, 1, 1)
+        self.tb.pack(bt, 4, 5, 1, 1)
         bt.show()
 
         ic = elementary.Icon(self.mainWindow)
@@ -306,20 +429,21 @@ class Interface:
         bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         bt.content_set(ic)
         bt.callback_unpressed_add(self.skip_track)
-        tb.pack(bt, 2, 2, 1, 1)
+        self.tb.pack(bt, 4, 4, 1, 1)
         bt.show()
 
         songinfo = self.ourPlayer.getSongInfo()
 
-        self.mainWindow.resize(800, 480)
+        self.mainWindow.resize(800, 300)
         self.mainWindow.show()
+        self.ourPlayer.addSongs()
 
 if __name__ == "__main__":
     elementary.init()
 
     GUI = Interface()
     GUI.login_clicked(None)
-    
+    #GUI.interface_clicked(None)
     elementary.run()    
     elementary.shutdown()
 
