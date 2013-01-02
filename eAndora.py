@@ -107,12 +107,8 @@ class eAndora:
         self.gui.refreshInterface()
 
     def startPlaying( self ):
-        info = self.songinfo[0]
-        self.curSong = 0
-        self.song = info['title']
-        self.player.set_media(vlc.Media(info['url']))
-        self.player.play()
-        self.gui.song_change()
+        self.curSong = -1
+        self.nextSong()
 
     def nextSong( self , event=False):
         #print("Debug 1")
@@ -136,6 +132,7 @@ class eAndora:
         #print("Debug 5")
         self.player.set_media(vlc.Media(info['url']))
         #print("Debug 6")
+        self.playing = True
         self.player.play()
         #print("Debug 7")
         self.gui.song_change()
@@ -153,7 +150,8 @@ class Interface:
         self.song = elementary.Button(self.mainWindow)
         self.artist = elementary.Button(self.mainWindow)
         self.album = elementary.Button(self.mainWindow)
-        self.counter = [elementary.Clock(self.mainWindow), elementary.Label(self.mainWindow)]
+        self.counter = [elementary.Clock(self.mainWindow), elementary.Label(self.mainWindow), elementary.Label(self.mainWindow)]
+        self.pauseTime = None
 
     def song_change( self ):
         info = self.ourPlayer.getCurSongInfo()
@@ -205,7 +203,7 @@ class Interface:
         self.counter[1].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         time.sleep(0.5)
         mins, seconds = self.ourPlayer.getSongDuration()
-        if seconds > 9:
+        if int(seconds) > 9:
             self.counter[1].text_set("<b>/      %s : %s</b>"%(mins, int(seconds)))
         else:
             self.counter[1].text_set("<b>/      %s : 0%s</b>"%(mins, int(seconds)))
@@ -217,8 +215,16 @@ class Interface:
     def close_window(self, bt, win):
         win.delete()
 
-    def login_user(self, bt, user, passwd, win):
+    def login_user(self, bt, user, passwd, win, ck):
         win.hide()
+        if ck.state:
+            home = os.path.expanduser("~")
+            if not os.path.exists("%s/.config/eAndora"%home):
+                os.makedirs("%s/.config/eAndora"%home)
+            f = open('%s/.config/eAndora/userinfo'%home, 'w')
+            f.write('%s\n'%user.entry_get())
+            f.write('%s\n'%passwd.entry_get())
+            f.close()
         self.ourPlayer.auth(user.entry_get(), passwd.entry_get())
         self.interface_clicked(None)
 
@@ -257,8 +263,18 @@ class Interface:
 
         win.show()
 
-    def login_clicked(self, obj):
+    def login(self, obj):
         self.ourPlayer.setGUI(self)
+        home = os.path.expanduser("~")
+        if os.path.exists("%s/.config/eAndora/userinfo"%home):
+            f = open('%s/.config/eAndora/userinfo'%home, 'r')
+            lines = f.readlines()
+            self.ourPlayer.auth(lines[0].rstrip("\n"), lines[1].rstrip("\n"))
+            self.interface_clicked(None)
+        else:
+            self.login_clicked(None)
+
+    def login_clicked(self, obj):
         win = elementary.Window("table", elementary.ELM_WIN_BASIC)
         win.title_set("eAndora - Login")
         if obj is None:
@@ -288,6 +304,12 @@ class Interface:
         tb.pack(bt, 0, 1, 1, 1)
         bt.show()
 
+        ck = elementary.Check(win)
+        ck.text_set("Store Login")
+        #ck.callback_changed_add(ck_3)
+        tb.pack(ck, 0, 2, 1, 1)
+        ck.show()
+
         log = elementary.Entry(win)
         log.line_wrap_set(False)
         log.entry_set("address")
@@ -311,8 +333,8 @@ class Interface:
         bt.text_set("Login")
         bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        bt.callback_unpressed_add(self.login_user, log, pas, win)
-        tb.pack(bt, 0, 2, 1, 1)
+        bt.callback_unpressed_add(self.login_user, log, pas, win, ck)
+        tb.pack(bt, 0, 3, 2, 1)
         bt.show()
 
         bt = elementary.Button(win)
@@ -320,7 +342,7 @@ class Interface:
         bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         bt.callback_unpressed_add(self.close_window, win)
-        tb.pack(bt, 1, 2, 1, 1)
+        tb.pack(bt, 0, 4, 2, 1)
         bt.show()
 
         win.resize(800, 300)
@@ -330,9 +352,26 @@ class Interface:
         ic = elementary.Icon(self.mainWindow)
         if self.ourPlayer.playing:
             ic.file_set("images/play.png")
+            self.pauseTime = self.counter[0].time_get()
+            self.counter[0].hide()
+            self.counter[2].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+            self.counter[2].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+            if self.pauseTime[2] > 9:
+                self.counter[2].text_set("<b>%s : %s</b>"%(self.pauseTime[1], self.pauseTime[2]))
+            else:
+                self.counter[2].text_set("<b>%s : 0%s</b>"%(self.pauseTime[1], self.pauseTime[2]))
+            self.tb.pack(self.counter[2], 0, 3, 1, 1)
+            self.counter[2].show()
             self.ourPlayer.pauseSong()
         else:
             ic.file_set("images/pause.png")
+            self.counter[2].hide()
+            self.counter[0].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+            self.counter[0].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+            self.counter[0].show_seconds_set(True)
+            self.counter[0].time_set(0, self.pauseTime[1], self.pauseTime[2])
+            self.tb.pack(self.counter[0], 0, 3, 1, 1)
+            self.counter[0].show()
             self.ourPlayer.playSong()
         bt.content_set(ic)
         bt.show()
@@ -404,10 +443,6 @@ class Interface:
         self.stationButton.callback_unpressed_add(self.station_selection)
         self.tb.pack(self.stationButton, 4, 0, 2, 3)
 
-        """self.stationDropdown.homogeneous = False
-        self.stationDropdown.size_hint_weight_set(0.0, 0.0)
-        self.stationDropdown.size_hint_align_set(evas.EVAS_HINT_FILL, 0.0)"""
-
         self.songList.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.songList.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         self.tb.pack(self.songList, 0, 4, 4, 3)
@@ -442,7 +477,7 @@ if __name__ == "__main__":
     elementary.init()
 
     GUI = Interface()
-    GUI.login_clicked(None)
+    GUI.login(None)
     #GUI.interface_clicked(None)
     elementary.run()    
     elementary.shutdown()
