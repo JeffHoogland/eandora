@@ -11,7 +11,6 @@ import elementary
 import edje
 import ecore
 import evas
-import emotion
 import time
 import pandora
 import vlc
@@ -41,10 +40,9 @@ class eAndora:
         self.song = None
         self.songinfo = []
         self.displaysongs = []
-        self.player = None
-        #self.player = vlc.MediaPlayer()
-        #self.event_manager = self.player.event_manager()
-        #self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
+        self.player = vlc.MediaPlayer()
+        self.event_manager = self.player.event_manager()
+        self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
         self.songCount = 0
 
     def setGUI( self, GUI):
@@ -61,13 +59,11 @@ class eAndora:
 
     def playSong( self ):
         self.playing = True
-        #self.player.play()
-        self.player.play_set(True)
+        self.player.play()
 
     def pauseSong( self ):
         self.playing = False
-        #self.player.pause()
-        self.player.play_set(False)
+        self.player.pause()
 
     def skipSong( self ):
         self.nextSong("skip")
@@ -94,7 +90,7 @@ class eAndora:
                 return station
 
     def getSongDuration( self ):
-        seconds = self.player.play_length_get()
+        seconds = self.player.get_length() / 1000.0
         mins = 0
         while seconds >= 60:
             seconds -= 60
@@ -145,12 +141,12 @@ class eAndora:
 
     def nextSong( self , event=False ):
         print("Debug 1")
-        if self.player:
-            if self.player.play_get():
-                self.player.play_set(False)
+        if self.player.is_playing():
+            self.player.stop()
         print("Debug 2")
-        self.player = emotion.Emotion(self.gui.mainWindow.evas_get(), module_filename="xine")
-        self.player.callback_add("playback_finished", self.nextSong)
+        self.player = vlc.MediaPlayer()
+        self.event_manager = self.player.event_manager()
+        self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
         print("Debug 3")
         self.curSong += 1
         info = self.songinfo[self.curSong]
@@ -158,10 +154,10 @@ class eAndora:
         self.song = info['title']
         print(info)
         print("Debug 4")
-        self.player.file = info['url']
+        self.player.set_media(vlc.Media(info['url']))
         print("Debug 5")
         self.playing = True
-        self.player.play_set(True)
+        self.player.play()
         print("Debug 6")
         self.gui.song_change()
         print("Debug 7")
