@@ -31,7 +31,6 @@ class eAndora:
         self.pandora = pandora.Pandora()
         self.curStation = ""
         self.curSong = None
-        self.playing = False
         self.skip = False
         self.die = False
         self.settings = {"username":"", "password":""}
@@ -45,6 +44,8 @@ class eAndora:
 
     def setGUI( self, GUI):
         self.gui = GUI
+        self.player = emotion.Emotion(self.gui.mainWindow.evas_get(), module_filename="gstreamer")
+        self.player.callback_add("playback_finished", self.nextSong)
 
     def auth( self, user, passwd):
         print "User %s - Password %s"%(user, passwd)
@@ -56,13 +57,9 @@ class eAndora:
             self.gui.login_error(None)
 
     def playSong( self ):
-        self.playing = True
-        #self.player.play()
         self.player.play_set(True)
 
     def pauseSong( self ):
-        self.playing = False
-        #self.player.pause()
         self.player.play_set(False)
 
     def skipSong( self ):
@@ -90,11 +87,14 @@ class eAndora:
                 return station
 
     def getSongDuration( self ):
-        seconds = self.player.play_length_get()
+        print "Getting Song duration"
+        seconds = self.player.play_length
+        print "Starting Seconds %s"%seconds
         mins = 0
         while seconds >= 60:
             seconds -= 60
             mins += 1
+        print "Minutes %s Seconds %s"%(mins, seconds) 
         return mins, seconds
 
     def getSongRating( self ):
@@ -144,9 +144,9 @@ class eAndora:
         if self.player:
             if self.player.play_get():
                 self.player.play_set(False)
-        print("Debug 2")
-        self.player = emotion.Emotion(self.gui.mainWindow.evas_get(), module_filename="xine")
-        self.player.callback_add("playback_finished", self.nextSong)
+        #print("Debug 2")
+        #self.player = emotion.Emotion(self.gui.mainWindow.evas_get(), module_filename="xine")
+        #self.player.callback_add("playback_finished", self.nextSong)
         print("Debug 3")
         self.curSong += 1
         info = self.songinfo[self.curSong]
@@ -247,8 +247,8 @@ class Interface:
         print("DEBUG: Changing total time")
         self.counter[1].hide()
         mins, seconds = 0, 0
-        while not mins and not seconds:
-            time.sleep(0.5)
+        while not mins and (seconds == 1 or seconds == 0):
+            time.sleep(0.25)
             mins, seconds = self.ourPlayer.getSongDuration()
         if int(seconds) > 9:
             self.counter[1].text_set("<b>/      %s : %s</b>"%(mins, int(seconds)))
