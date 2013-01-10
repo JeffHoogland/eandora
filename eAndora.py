@@ -1,5 +1,5 @@
 """A Pandora Client Written in Python EFLs/Elm
-Uses VLC as a streaming backend
+Uses Emotion as a streaming backend
 By: Jeff Hoogland (JeffHoogland@Linux.com)
 Started: 12/20/12
 
@@ -14,7 +14,6 @@ import evas
 import emotion
 import time
 import pandora
-import vlc
 import urllib
 import webbrowser
 
@@ -42,9 +41,6 @@ class eAndora:
         self.songinfo = []
         self.displaysongs = []
         self.player = None
-        #self.player = vlc.MediaPlayer()
-        #self.event_manager = self.player.event_manager()
-        #self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
         self.songCount = 0
 
     def setGUI( self, GUI):
