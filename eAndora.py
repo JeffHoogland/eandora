@@ -139,15 +139,14 @@ class eAndora:
         self.curSong = -1
         self.nextSong()
 
-    def nextSong( self , event=False):
+    def nextSong( self , event=False ):
         print("Debug 1")
         if self.player.is_playing():
             self.player.stop()
-        else:
-            print("Debug 2")
-            self.player = vlc.MediaPlayer()
-            self.event_manager = self.player.event_manager()
-            self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
+        print("Debug 2")
+        self.player = vlc.MediaPlayer()
+        self.event_manager = self.player.event_manager()
+        self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
         print("Debug 3")
         self.curSong += 1
         info = self.songinfo[self.curSong]
@@ -371,7 +370,6 @@ class Interface:
 
         ck = elementary.Check(win)
         ck.text_set("Store Login")
-        #ck.callback_changed_add(ck_3)
         tb.pack(ck, 0, 2, 1, 1)
         ck.show()
 
@@ -448,6 +446,14 @@ class Interface:
         print(("ctxpopup item selected: %s" % (item.text)))
         self.refreshInterface(True)
         self.ourPlayer.setStation(self.ourPlayer.getStationFromName(item.text))
+        home = os.path.expanduser("~")
+        if not os.path.exists("%s/.config/eAndora"%home):
+            os.makedirs("%s/.config/eAndora"%home)
+        if os.path.exists("%s/.config/eAndora/stationinfo"%home):
+            os.remove('%s/.config/eAndora/stationinfo'%home)
+        f = open('%s/.config/eAndora/stationinfo'%home, 'w')
+        f.write('%s\n'%item.text)
+        f.close()
         self.ourPlayer.pauseSong()
         self.ourPlayer.clearSongs()
         self.ourPlayer.addSongs()
@@ -482,7 +488,13 @@ class Interface:
     def interface_clicked(self, obj):
         #self.ourPlayer.setGUI(self)
         #self.ourPlayer.auth("jeffhoogland@linux.com", "")
-        self.ourPlayer.setStation(self.ourPlayer.getStations()[0])
+        home = os.path.expanduser("~")
+        if os.path.exists("%s/.config/eAndora/stationinfo"%home):
+            f = open('%s/.config/eAndora/stationinfo'%home, 'r')
+            lines = f.readlines()
+            self.ourPlayer.setStation(self.ourPlayer.getStationFromName(lines[0].rstrip("\n")))
+        else:
+            self.ourPlayer.setStation(self.ourPlayer.getStations()[0])
         self.mainWindow.title_set("eAndora - Internet Radio")
         ic = elementary.Icon(self.mainWindow)
         ic.file_set("images/eAndora.png")
@@ -575,8 +587,6 @@ class Interface:
         self.rating.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.rating.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         self.tb.pack(self.rating, 5, 4, 1, 1)
-
-        songinfo = self.ourPlayer.getSongInfo()
 
         self.mainWindow.resize(800, 300)
         self.mainWindow.show()
