@@ -372,6 +372,7 @@ class Interface:
         ck.show()
 
         log = elementary.Entry(win)
+        log.single_line = True
         log.line_wrap_set(False)
         log.entry_set("address")
         log.input_panel_return_key_disabled_set(True)
@@ -381,6 +382,7 @@ class Interface:
         log.show()
 
         pas = elementary.Entry(win)
+        pas.single_line = True
         pas.line_wrap_set(False)
         pas.entry_set("password")
         pas.password = True
