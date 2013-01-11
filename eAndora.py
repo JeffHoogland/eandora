@@ -39,7 +39,6 @@ class eAndora:
         self.song = None
         self.songinfo = []
         self.displaysongs = []
-        self.player = None
         self.songCount = 0
 
     def setGUI( self, GUI):
@@ -156,7 +155,6 @@ class eAndora:
         print("Debug 4")
         self.player.file = info['url']
         print("Debug 5")
-        self.playing = True
         self.player.play_set(True)
         print("Debug 6")
         self.gui.song_change()
@@ -413,7 +411,7 @@ class Interface:
 
     def play_pause(self, bt):
         ic = elementary.Icon(self.mainWindow)
-        if self.ourPlayer.playing:
+        if self.ourPlayer.player.play:
             ic.file_set("images/play.png")
             self.pauseTime = self.counter[0].time_get()
             self.counter[0].hide()
