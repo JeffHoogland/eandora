@@ -136,7 +136,7 @@ class playerWindow(elementary.Table):
     def love_track( self, bt ):
         #Tell pandora we love this song, then update the GUI so it reflects this change
         self.ourPlayer.loveSong()
-        ic = elementary.Icon(parent.mainWindow)
+        ic = elementary.Icon(self.rent.mainWindow)
         ic.file_set('images/love.png')
         self.rating.hide()
         self.rating.tooltip_text_set("Song already liked")
