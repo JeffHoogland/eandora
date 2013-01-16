@@ -5852,6 +5852,7 @@ if __name__ == '__main__':
 
     echo_position = False
     def pos_callback(event, player):
+        print "Debug"
         if echo_position:
             sys.stdout.write('\r%s to %.2f%% (%.2f%%)' % (event.type,
                                                           event.u.new_position * 100,

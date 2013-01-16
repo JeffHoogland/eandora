@@ -1,0 +1,3 @@
+have a check for if max time is displayed as zero
+
+reauth every X songs
