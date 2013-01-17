@@ -13,7 +13,7 @@ def openBrowser(url):
 class eAndora(object):
     def __init__( self, parent ):
         self.gui = ""
-        self.window = parent.mainWindow
+        self.rent = parent
         self.pandora = pandora.Pandora()
         self.curStation = ""
         self.curSong = None
@@ -39,7 +39,7 @@ class eAndora(object):
         try:
             self.pandora.connect(self.settings['username'], self.settings['password'])
         except:
-            self.window.login_error()
+            self.rent.login_error()
 
     def playSong( self ):
         self.player.play_set(True)
@@ -84,6 +84,18 @@ class eAndora(object):
 
     def getSongRating( self ):
         return self.songinfo[self.curSong]['rating']
+
+    def search( self, searchstring ):
+        return self.pandora.search(searchstring)
+
+    def createStation( self, station ):
+        self.pandora.add_station_by_music_id(station)
+
+    def deleteStation( self, station ):
+        pandora.Station(self.pandora, station).delete()
+
+    def renameStation( self, station, name ):
+        pandora.Station(self.pandora, station).delete()
 
     def showSong( self ):
         openBrowser(self.songinfo[self.curSong]['object'].songDetailURL)

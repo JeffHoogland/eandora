@@ -18,6 +18,10 @@ import webbrowser
 #GUI Windows
 from loginWindow import *
 from playerWindow import *
+from settingsWindow import *
+from createWindow import *
+from stationWindow import *
+from renameWindow import *
 #Pandora Backend Interface
 from playerClass import *
 
@@ -35,9 +39,12 @@ class Interface(object):
         #Our pandora interface instance
         self.ourPlayer = eAndora(self)
 
+        #Location of the PY files for image usage
+        self.location = os.path.dirname(os.path.abspath(__file__))
+
     def launch( self ):
         #Resize and display the main window, then login
-        self.mainWindow.resize(800, 300)
+        self.mainWindow.resize(1024, 300)
         self.mainWindow.show()
         self.login()
 
@@ -83,6 +90,19 @@ class Interface(object):
     def spawn_player(self, bt=False, win=False):
         #Push the main frame
         self.nf.item_simple_push(playerWindow(self))
+
+    def spawn_settings(self, bt=False, win=False):
+        #Push the settings frame
+        self.nf.item_simple_push(settingsWindow(self))
+
+    def spawn_create(self, bt=False, win=False):
+        self.nf.item_simple_push(createWindow(self))
+
+    def spawn_stations(self, bt=False, win=False):
+        self.nf.item_simple_push(stationWindow(self))
+
+    def spawn_rename(self, name):
+        self.nf.item_simple_push(renameWindow(self, name))
 
 
 if __name__ == "__main__":

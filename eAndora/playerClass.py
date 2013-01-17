@@ -85,6 +85,18 @@ class eAndora(object):
     def getSongRating( self ):
         return self.songinfo[self.curSong]['rating']
 
+    def search( self, searchstring ):
+        return self.pandora.search(searchstring)
+
+    def createStation( self, station ):
+        self.pandora.add_station_by_music_id(station)
+
+    def deleteStation( self, station ):
+        pandora.Station(self.pandora, station).delete()
+
+    def renameStation( self, station, name ):
+        pandora.Station(self.pandora, station).rename(name)
+
     def showSong( self ):
         openBrowser(self.songinfo[self.curSong]['object'].songDetailURL)
 

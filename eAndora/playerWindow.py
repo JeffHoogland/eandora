@@ -4,11 +4,15 @@ import urllib
 import time
 import os
 import shutil
+import cgi
 
 class playerWindow(elementary.Table):
     def __init__( self, parent ):
         #Builds an elementary tabel that displays our information
         elementary.Table.__init__(self, parent.mainWindow)
+
+        #Store the global window
+        self.win = parent.mainWindow
 
         #Store our parent window
         self.rent = parent
@@ -19,7 +23,7 @@ class playerWindow(elementary.Table):
 
         #These are widgets that appear at the player page of our window
         self.songList = elementary.List(parent.mainWindow)
-        self.stationButton = elementary.Button(parent.mainWindow)
+        self.stationButton = elementary.Label(parent.mainWindow)
         self.thumb = elementary.Button(parent.mainWindow)
         self.song = elementary.Button(parent.mainWindow)
         self.artist = elementary.Label(parent.mainWindow)
@@ -39,11 +43,10 @@ class playerWindow(elementary.Table):
         else:
             self.ourPlayer.setStation(self.ourPlayer.getStations()[0])
 
-        self.stationButton.tooltip_text_set("Change Stations")
         self.stationButton.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.stationButton.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.stationButton.callback_unpressed_add(self.station_selection)
-        self.pack(self.stationButton, 4, 0, 2, 3)
+        #self.stationButton.callback_unpressed_add(self.station_selection)
+        self.pack(self.stationButton, 4, 1, 2, 1)
 
         self.songList.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.songList.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
@@ -52,19 +55,20 @@ class playerWindow(elementary.Table):
         #Our main menu
         self.menubutton.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.menubutton.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        item = self.menubutton.item_append("images/eAndora.png", "Menu", None, None)
+        item = self.menubutton.item_append("%s/images/eAndora.png"%self.rent.location, "Menu", None, None)
         item.menu_set(True)
         self.menubutton.menu_parent_set(parent.mainWindow)
         menu = item.menu_get()
-        menu.item_add(None, "About", "images/about.png", self.logout)
-        menu.item_add(None, "Create Station", "images/search.png", self.logout)
-        menu.item_add(None, "Settings", "images/settings.png", self.logout)
+        menu.item_add(None, "About", "%s/images/about.png"%self.rent.location, self.about)
+        menu.item_add(None, "Stations", "%s/images/search.png"%self.rent.location, self.stations)
+        #menu.item_add(None, "Settings", "%s/images/settings.png", self.settings)
         menu.item_add(None, "Logout", "refresh", self.logout)
+        menu.item_add(None, "Exit", "%s/images/exit.png"%self.rent.location, self.exit)
         self.pack(self.menubutton, 5, 3, 1, 1)
         self.menubutton.show()
 
         ic = elementary.Icon(parent.mainWindow)
-        ic.file_set("images/skip.png")
+        ic.file_set("%s/images/skip.png"%self.rent.location)
         bt = elementary.Button(parent.mainWindow)
         bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
@@ -74,7 +78,7 @@ class playerWindow(elementary.Table):
         bt.show()
 
         ic = elementary.Icon(parent.mainWindow)
-        ic.file_set("images/pause.png")
+        ic.file_set("%s/images/pause.png"%self.rent.location)
         bt = elementary.Button(parent.mainWindow)
         bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
@@ -84,7 +88,7 @@ class playerWindow(elementary.Table):
         bt.show()
 
         ic = elementary.Icon(parent.mainWindow)
-        ic.file_set("images/ban.png")
+        ic.file_set("%s/images/ban.png"%self.rent.location)
         bt = elementary.Button(parent.mainWindow)
         bt.tooltip_text_set("Ban Song")
         bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
@@ -99,7 +103,7 @@ class playerWindow(elementary.Table):
 
         self.thumb.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.thumb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.pack(self.thumb, 2, 0, 2, 3)
+        self.pack(self.thumb, 2, 0, 2, 2)
 
         self.song.callback_pressed_add(self.show_song)
         self.song.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
@@ -114,7 +118,7 @@ class playerWindow(elementary.Table):
         self.rating.callback_unpressed_add(self.love_track)
         self.artist.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.artist.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.pack(self.artist, 0, 2, 2, 1)
+        self.pack(self.artist, 4, 0, 2, 1)
 
         self.counter[0].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.counter[0].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
@@ -140,7 +144,7 @@ class playerWindow(elementary.Table):
         #Tell pandora we love this song, then update the GUI so it reflects this change
         self.ourPlayer.loveSong()
         ic = elementary.Icon(self.rent.mainWindow)
-        ic.file_set('images/love.png')
+        ic.file_set('%s/images/love.png'%self.rent.location)
         self.rating.hide()
         self.rating.tooltip_text_set("Song already liked")
         self.rating.content_set(ic)
@@ -206,13 +210,13 @@ class playerWindow(elementary.Table):
         ic = elementary.Icon(self.rent.mainWindow)
         rating = self.ourPlayer.getSongRating()
         if not rating:
-            ic.file_set('images/favorite.png')
+            ic.file_set('%s/images/favorite.png'%self.rent.location)
             self.rating.tooltip_text_set("Like Song")
         elif rating == 'love':
-            ic.file_set('images/love.png')
+            ic.file_set('%s/images/love.png'%self.rent.location)
             self.rating.tooltip_text_set("Song already liked")
         else:
-            ic.file_set('images/ban.png')
+            ic.file_set('%s/images/ban.png'%self.rent.location)
         self.rating.content_set(ic)
         self.rating.show()
 
@@ -224,7 +228,7 @@ class playerWindow(elementary.Table):
     def play_pause(self, bt):
         ic = elementary.Icon(self.rent.mainWindow)
         if self.ourPlayer.player.play:
-            ic.file_set("images/play.png")
+            ic.file_set("%s/images/play.png"%self.rent.location)
             self.pauseTime = self.counter[0].time_get()
             self.counter[0].hide()
             self.counter[2].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
@@ -237,7 +241,7 @@ class playerWindow(elementary.Table):
             self.counter[2].show()
             self.ourPlayer.pauseSong()
         else:
-            ic.file_set("images/pause.png")
+            ic.file_set("%s/images/pause.png"%self.rent.location)
             self.counter[2].hide()
             self.counter[0].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
             self.counter[0].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
@@ -252,22 +256,6 @@ class playerWindow(elementary.Table):
     def skip_track(self, bt):
         self.ourPlayer.skipSong()
 
-    def cb_items(self, li, item):
-        print(("ctxpopup item selected: %s" % (item.text)))
-        self.refreshInterface(True)
-        self.ourPlayer.setStation(self.ourPlayer.getStationFromName(item.text))
-        home = os.path.expanduser("~")
-        if not os.path.exists("%s/.config/eAndora"%home):
-            os.makedirs("%s/.config/eAndora"%home)
-        if os.path.exists("%s/.config/eAndora/stationinfo"%home):
-            os.remove('%s/.config/eAndora/stationinfo'%home)
-        f = open('%s/.config/eAndora/stationinfo'%home, 'w')
-        f.write('%s\n'%item.text)
-        f.close()
-        self.ourPlayer.pauseSong()
-        self.ourPlayer.clearSongs()
-        self.ourPlayer.addSongs()
-
     def refreshInterface( self, clear=False ):
         if clear:
             self.songList.clear()
@@ -275,25 +263,28 @@ class playerWindow(elementary.Table):
         self.songList.item_prepend("%s - %s"%(info['title'], info['artist']))
         self.songList.show()
         self.songList.go()
-        self.stationButton.text_set(str(self.ourPlayer.getStation().name))
+        self.stationButton.text_set("<b><div align='center'>Station: %s</div></b>"%str(self.ourPlayer.getStation().name))
         self.stationButton.hide()
         self.stationButton.show()
 
-    def item_new(self, cp, label, icon = None):
-        if icon:
-            ic = elementary.Icon(cp)
-            ic.standard_set(icon)
-            ic.resizable_set(False, False)
-            return cp.item_append(label, ic, self.cb_items)
-        else:
-            return cp.item_append(label, None, self.cb_items)
-
     def station_selection(self, bt):
-        cp = elementary.Ctxpopup(bt)
-        stations = self.ourPlayer.getStations()
-        for station in stations:
-            bt = self.item_new(cp, str(station['stationName']))
-        cp.show()
+        self.rent.spawn_stations()
+
+    def about(self, menu, item):
+        popup = elementary.Popup(self.win)
+        popup.text = "Pandora Internet Radio player written in python and elementary. By: Jeff Hoogland"
+        popup.part_text_set("title,text", "About")
+        bt = elementary.Button(self.win)
+        bt.text = "Close"
+        bt.callback_clicked_add(lambda x: popup.delete())
+        popup.part_content_set("button1", bt)
+        popup.show()
+
+    def stations(self, menu, item):
+        self.rent.spawn_stations()
+
+    def settings(self, menu, item):
+        self.rent.spawn_settings()
 
     def logout(self, menu, item):
         print "Log out"
@@ -302,3 +293,6 @@ class playerWindow(elementary.Table):
         home = os.path.expanduser("~")
         shutil.rmtree('%s/.config/eAndora'%home)
         self.rent.spawn_login()
+
+    def exit(self, menu, item):
+        elementary.exit()
