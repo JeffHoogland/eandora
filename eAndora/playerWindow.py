@@ -169,7 +169,7 @@ class playerWindow(elementary.Table):
         urllib.urlretrieve(str(info['thumbnail']), '/tmp/albumart.jpg')
         ic = elementary.Icon(self.rent.mainWindow)
         ic.file_set('/tmp/albumart.jpg')
-        self.thumb.show()
+        self.thumb.hide()
         self.thumb.content_set(ic)
         self.thumb.show()
 

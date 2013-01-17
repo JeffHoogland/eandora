@@ -169,9 +169,9 @@ class playerWindow(elementary.Table):
         urllib.urlretrieve(str(info['thumbnail']), '/tmp/albumart.jpg')
         ic = elementary.Icon(self.rent.mainWindow)
         ic.file_set('/tmp/albumart.jpg')
-        self.thumb.show()
+        #self.thumb.show()
         self.thumb.content_set(ic)
-        self.thumb.show()
+        #self.thumb.show()
 
         print("DEBUG: Changing song title")
         self.song.hide()
