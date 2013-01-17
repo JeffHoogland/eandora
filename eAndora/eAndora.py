@@ -66,7 +66,6 @@ class Interface(object):
 
     def login_error(self):
         popup = elementary.Popup(self.mainWindow)
-        #popup.size_hint_weight = (evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         popup.text = "Something went wrong, please try again"
         popup.part_text_set("title,text", "Login Error")
         bt = elementary.Button(self.mainWindow)
