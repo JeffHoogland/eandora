@@ -44,7 +44,7 @@ class Interface(object):
 
     def launch( self ):
         #Resize and display the main window, then login
-        self.mainWindow.resize(1024, 300)
+        self.mainWindow.resize(800, 300)
         self.mainWindow.show()
         self.login()
 

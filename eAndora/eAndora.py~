@@ -21,6 +21,7 @@ from playerWindow import *
 from settingsWindow import *
 from createWindow import *
 from stationWindow import *
+from renameWindow import *
 #Pandora Backend Interface
 from playerClass import *
 

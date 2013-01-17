@@ -1,10 +1,11 @@
 import elementary
 import evas
+import ecore
 import urllib
 import time
 import os
 import shutil
-import cgi
+import datetime
 
 class playerWindow(elementary.Table):
     def __init__( self, parent ):
@@ -21,6 +22,9 @@ class playerWindow(elementary.Table):
         self.ourPlayer = parent.ourPlayer
         self.ourPlayer.setGUI(self)
 
+        #Internal length of our current song
+        self.duration = 0.0
+
         #These are widgets that appear at the player page of our window
         self.songList = elementary.List(parent.mainWindow)
         self.stationButton = elementary.Label(parent.mainWindow)
@@ -31,8 +35,12 @@ class playerWindow(elementary.Table):
         self.rating = elementary.Button(parent.mainWindow)
         self.menubutton = elementary.Toolbar(parent.mainWindow)
         self.mainmenu = elementary.Menu(parent.mainWindow)
-        self.counter = [elementary.Clock(parent.mainWindow), elementary.Label(parent.mainWindow), elementary.Label(parent.mainWindow)]
+        #self.counter = [elementary.Clock(parent.mainWindow), elementary.Label(parent.mainWindow), elementary.Label(parent.mainWindow)]
+        self.counter = SeekControls(parent)
         self.pauseTime = None
+
+        self.playtimer = playtimer = ecore.timer_add(0.2, self.update)
+        playtimer.freeze()
 
         #Build the page layout
         home = os.path.expanduser("~")
@@ -43,14 +51,8 @@ class playerWindow(elementary.Table):
         else:
             self.ourPlayer.setStation(self.ourPlayer.getStations()[0])
 
-        self.stationButton.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        self.stationButton.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        #self.stationButton.callback_unpressed_add(self.station_selection)
-        self.pack(self.stationButton, 4, 1, 2, 1)
-
         self.songList.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.songList.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.pack(self.songList, 0, 4, 4, 3)
 
         #Our main menu
         self.menubutton.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
@@ -64,76 +66,113 @@ class playerWindow(elementary.Table):
         #menu.item_add(None, "Settings", "%s/images/settings.png", self.settings)
         menu.item_add(None, "Logout", "refresh", self.logout)
         menu.item_add(None, "Exit", "%s/images/exit.png"%self.rent.location, self.exit)
-        self.pack(self.menubutton, 5, 3, 1, 1)
         self.menubutton.show()
 
         ic = elementary.Icon(parent.mainWindow)
         ic.file_set("%s/images/skip.png"%self.rent.location)
-        bt = elementary.Button(parent.mainWindow)
-        bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        bt.content_set(ic)
-        bt.callback_unpressed_add(self.skip_track)
-        self.pack(bt, 4, 4, 1, 1)
-        bt.show()
+        skip = elementary.Button(parent.mainWindow)
+        skip.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        skip.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        skip.content_set(ic)
+        skip.tooltip_text_set("Skip Song")
+        skip.callback_unpressed_add(self.skip_track)
+        skip.show()
 
         ic = elementary.Icon(parent.mainWindow)
         ic.file_set("%s/images/pause.png"%self.rent.location)
-        bt = elementary.Button(parent.mainWindow)
-        bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        bt.content_set(ic)
-        bt.callback_unpressed_add(self.play_pause)
-        self.pack(bt, 4, 5, 1, 1)
-        bt.show()
+        pp = elementary.Button(parent.mainWindow)
+        pp.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        pp.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        pp.content_set(ic)
+        pp.tooltip_text_set("Pause Song")
+        pp.callback_unpressed_add(self.play_pause)
+        pp.show()
 
         ic = elementary.Icon(parent.mainWindow)
         ic.file_set("%s/images/ban.png"%self.rent.location)
-        bt = elementary.Button(parent.mainWindow)
-        bt.tooltip_text_set("Ban Song")
-        bt.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        bt.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        bt.content_set(ic)
-        bt.callback_unpressed_add(self.ban_track)
-        self.pack(bt, 5, 5, 1, 1)
-        bt.show()
+        ban = elementary.Button(parent.mainWindow)
+        ban.tooltip_text_set("Ban Song")
+        ban.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        ban.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        ban.content_set(ic)
+        ban.callback_unpressed_add(self.ban_track)
+        ban.show()
 
         #Define callbacks for all our buttons that will be updated
         #Button content is generated on song change
 
         self.thumb.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.thumb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.pack(self.thumb, 2, 0, 2, 2)
 
         self.song.callback_pressed_add(self.show_song)
         self.song.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.song.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.pack(self.song, 0, 0, 2, 1)
 
         self.album.callback_pressed_add(self.show_album)
         self.album.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.album.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.pack(self.album, 0, 1, 2, 1)
 
         self.rating.callback_unpressed_add(self.love_track)
         self.artist.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.artist.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.pack(self.artist, 4, 0, 2, 1)
 
-        self.counter[0].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        self.counter[0].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.counter[0].show_seconds_set(True)
-        self.pack(self.counter[0], 0, 3, 1, 1)
+        self.stationButton.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.stationButton.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
-        self.counter[1].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        self.counter[1].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.pack(self.counter[1], 2, 3, 1, 1)
+        self.counter.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.counter.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
         self.rating.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
         self.rating.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        self.pack(self.rating, 5, 4, 1, 1)
+
+        #Position of all the items on the table
+        #First row
+        self.pack(self.song,            0, 0, 2, 1)
+        self.pack(self.thumb,           2, 0, 2, 2)
+        self.pack(self.artist,          4, 0, 2, 1)
+
+        #Second Row
+        self.pack(self.album,           0, 1, 2, 1)
+        self.pack(self.stationButton,   4, 1, 2, 1)
+
+        #Third Row
+        thbox = elementary.Box(self.win)
+        thbox.horizontal = True
+        thbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        thbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        thbox.pack_end(pp)
+        thbox.pack_end(skip)
+        thbox.pack_end(self.counter)
+        thbox.pack_end(self.rating)
+        thbox.pack_end(ban)
+        thbox.show()
+        self.pack(thbox, 0, 2, 6, 1)
+        '''self.pack(pp,                   0, 2, 1, 1)
+        self.pack(skip,                 1, 2, 1, 1)
+        self.pack(self.counter,         2, 2, 2, 1)
+        self.pack(self.rating,          4, 2, 1, 1)
+        self.pack(ban,                  5, 2, 1, 1)'''
+
+        #Bottom
+        self.pack(self.menubutton,      0, 3, 1, 4)
+        self.pack(self.songList,        1, 3, 5, 4)
 
         self.ourPlayer.addSongs()
+
+    def update(self):
+        pos = self.ourPlayer.player.position_get()
+
+        pos = datetime.timedelta(seconds=int(pos))
+        self.position = pos
+        t = "<b><div align='center'>%s  /  %s</div></b>" % (pos, self.duration)
+        self.counter.text_set(t)
+
+        dur = self.ourPlayer.player.play_length
+        if dur != self.duration:
+            dur = datetime.timedelta(seconds=int(dur))
+            self.duration = dur
+
+        return 1
 
     def ban_track( self, bt ):
         #Tell pandora we don't want this song played anymore, then skip to the next track
@@ -188,22 +227,7 @@ class playerWindow(elementary.Table):
         self.artist.text_set("<b><div align='center'>Artist: %s</div></b>"%info['artist'])
         self.artist.show()
 
-        print("DEBUG: Changing clock to zero")
-        self.counter[0].hide()
-        self.counter[0].time_set(0, 0, 0)
-        self.counter[0].show()
-
-        print("DEBUG: Changing total time")
-        self.counter[1].hide()
-        mins, seconds = 0, 0
-        while not mins and (seconds == 1 or seconds == 0):
-            time.sleep(0.25)
-            mins, seconds = self.ourPlayer.getSongDuration()
-        if int(seconds) > 9:
-            self.counter[1].text_set("<b>/      %s : %s</b>"%(mins, int(seconds)))
-        else:
-            self.counter[1].text_set("<b>/      %s : 0%s</b>"%(mins, int(seconds)))
-        self.counter[1].show()
+        self.playtimer.thaw()
 
         print("DEBUG: Changing ratings")
         self.rating.hide()
@@ -229,27 +253,14 @@ class playerWindow(elementary.Table):
         ic = elementary.Icon(self.rent.mainWindow)
         if self.ourPlayer.player.play:
             ic.file_set("%s/images/play.png"%self.rent.location)
-            self.pauseTime = self.counter[0].time_get()
-            self.counter[0].hide()
-            self.counter[2].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-            self.counter[2].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-            if self.pauseTime[2] > 9:
-                self.counter[2].text_set("<b>%s : %s</b>"%(self.pauseTime[1], self.pauseTime[2]))
-            else:
-                self.counter[2].text_set("<b>%s : 0%s</b>"%(self.pauseTime[1], self.pauseTime[2]))
-            self.pack(self.counter[2], 0, 3, 1, 1)
-            self.counter[2].show()
+            self.playtimer.freeze()
             self.ourPlayer.pauseSong()
+            bt.tooltip_text_set("Play Song")
         else:
             ic.file_set("%s/images/pause.png"%self.rent.location)
-            self.counter[2].hide()
-            self.counter[0].size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-            self.counter[0].size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-            self.counter[0].show_seconds_set(True)
-            self.counter[0].time_set(0, self.pauseTime[1], self.pauseTime[2])
-            self.pack(self.counter[0], 0, 3, 1, 1)
-            self.counter[0].show()
+            self.playtimer.thaw()
             self.ourPlayer.playSong()
+            bt.tooltip_text_set("Pause Song")
         bt.content_set(ic)
         bt.show()
 
@@ -296,3 +307,15 @@ class playerWindow(elementary.Table):
 
     def exit(self, menu, item):
         elementary.exit()
+
+class SeekControls(elementary.Label):
+    def __init__(self, parent):
+        window = parent.mainWindow
+        elementary.Label.__init__(self, window)
+
+        self.text_set("00:00  /  00:00")
+        self.show()
+
+        self.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        self.show()
