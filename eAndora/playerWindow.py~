@@ -151,7 +151,7 @@ class playerWindow(elementary.Box):
         topbox.show()
         self.pack_end(topbox)
 
-        #Middle Row
+        #Third Row
         thbox = elementary.Box(self.win)
         thbox.horizontal = True
         thbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
