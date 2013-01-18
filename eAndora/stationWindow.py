@@ -124,4 +124,5 @@ class stationWindow(elementary.Box):
         self.ourPlayer.pauseSong()
         self.ourPlayer.clearSongs()
         self.ourPlayer.addSongs()
+        self.ourPlayer.gui.refreshInterface(True)
         self.rent.nf.item_pop()

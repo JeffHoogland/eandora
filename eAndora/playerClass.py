@@ -1,6 +1,10 @@
 import emotion
 import pandora
 import webbrowser
+import urllib
+
+Download = False
+DownloadPath = "/media/sda5/Music/pandora/"
 
 def openBrowser(url):
     print "Opening %s"%url
@@ -136,6 +140,10 @@ class eAndora(object):
         self.curSong = -1
         self.nextSong()
 
+    def check_download( self, url, title ):
+        if Download:
+            urllib.urlretrieve(str(url), '%s%s.mp3'%(DownloadPath, title))
+
     def nextSong( self , event=False ):
         print("Debug 1")
         if self.player:
@@ -149,6 +157,7 @@ class eAndora(object):
         print(info)
         print("Debug 4")
         self.player.file = info['url']
+        self.check_download(info['url'], info['title'])
         print("Debug 5")
         self.player.play_set(True)
         print("Debug 6")
