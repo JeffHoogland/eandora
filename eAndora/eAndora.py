@@ -44,7 +44,7 @@ class Interface(object):
 
     def launch( self ):
         #Resize and display the main window, then login
-        self.mainWindow.resize(800, 300)
+        self.mainWindow.resize(320, 560)
         self.mainWindow.show()
         self.login()
 
@@ -106,6 +106,7 @@ class Interface(object):
 
 
 if __name__ == "__main__":
+    elementary.init()
     GUI = Interface()
     GUI.launch()
     elementary.run()    

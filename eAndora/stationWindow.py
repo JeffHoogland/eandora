@@ -112,17 +112,18 @@ class stationWindow(elementary.Box):
             cp.dismiss()
         item = self.lst.selected_item_get()
         #self.rent.spawn_player()
-        self.ourPlayer.setStation(self.ourPlayer.getStationFromName(item.text))
-        home = os.path.expanduser("~")
-        if not os.path.exists("%s/.config/eAndora"%home):
-            os.makedirs("%s/.config/eAndora"%home)
-        if os.path.exists("%s/.config/eAndora/stationinfo"%home):
-            os.remove('%s/.config/eAndora/stationinfo'%home)
-        f = open('%s/.config/eAndora/stationinfo'%home, 'w')
-        f.write('%s\n'%item.text)
-        f.close()
-        self.ourPlayer.pauseSong()
-        self.ourPlayer.clearSongs()
-        self.ourPlayer.addSongs()
-        self.ourPlayer.gui.refreshInterface(True)
-        self.rent.nf.item_pop()
+        if item:
+            self.ourPlayer.setStation(self.ourPlayer.getStationFromName(item.text))
+            home = os.path.expanduser("~")
+            if not os.path.exists("%s/.config/eAndora"%home):
+                os.makedirs("%s/.config/eAndora"%home)
+            if os.path.exists("%s/.config/eAndora/stationinfo"%home):
+                os.remove('%s/.config/eAndora/stationinfo'%home)
+            f = open('%s/.config/eAndora/stationinfo'%home, 'w')
+            f.write('%s\n'%item.text)
+            f.close()
+            self.ourPlayer.pauseSong()
+            self.ourPlayer.clearSongs()
+            self.ourPlayer.addSongs()
+            self.ourPlayer.gui.refreshInterface(True)
+            self.rent.nf.item_pop()

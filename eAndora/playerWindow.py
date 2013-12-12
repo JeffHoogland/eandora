@@ -51,7 +51,7 @@ class playerWindow(elementary.Box):
         else:
             self.ourPlayer.setStation(self.ourPlayer.getStations()[0])
 
-        self.songList.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.songList.size_hint_weight_set(2, 2)
         self.songList.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
         #Our main menu
@@ -71,7 +71,7 @@ class playerWindow(elementary.Box):
         ic = elementary.Icon(parent.mainWindow)
         ic.file_set("%s/images/skip.png"%self.rent.location)
         skip = elementary.Button(parent.mainWindow)
-        skip.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        skip.size_hint_weight_set(1, 1)
         skip.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         skip.content_set(ic)
         skip.tooltip_text_set("Skip Song")
@@ -81,7 +81,7 @@ class playerWindow(elementary.Box):
         ic = elementary.Icon(parent.mainWindow)
         ic.file_set("%s/images/pause.png"%self.rent.location)
         pp = elementary.Button(parent.mainWindow)
-        pp.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        pp.size_hint_weight_set(1, 1)
         pp.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         pp.content_set(ic)
         pp.tooltip_text_set("Pause Song")
@@ -92,7 +92,7 @@ class playerWindow(elementary.Box):
         ic.file_set("%s/images/ban.png"%self.rent.location)
         ban = elementary.Button(parent.mainWindow)
         ban.tooltip_text_set("Ban Song")
-        ban.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        ban.size_hint_weight_set(1, 1)
         ban.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         ban.content_set(ic)
         ban.callback_unpressed_add(self.ban_track)
@@ -101,79 +101,58 @@ class playerWindow(elementary.Box):
         #Define callbacks for all our buttons that will be updated
         #Button content is generated on song change
 
-        self.thumb.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.thumb.size_hint_weight_set(1, 1)
         self.thumb.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
         self.song.callback_pressed_add(self.show_song)
-        self.song.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.song.size_hint_weight_set(.25, .25)
         self.song.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
         self.album.callback_pressed_add(self.show_album)
-        self.album.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.album.size_hint_weight_set(.25, .25)
         self.album.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
         self.rating.callback_unpressed_add(self.love_track)
-        self.artist.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.artist.size_hint_weight_set(.25, .25)
         self.artist.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
-        self.stationButton.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.stationButton.size_hint_weight_set(.25, .25)
         self.stationButton.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
-        self.counter.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.counter.size_hint_weight_set(1, 1)
         self.counter.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
-        self.rating.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.rating.size_hint_weight_set(1, 1)
         self.rating.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
         #Position of all the items on the table
-        #First
-        uplbox = elementary.Box(self.win)
-        uplbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        uplbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        uplbox.pack_end(self.song)
-        uplbox.pack_end(self.artist)
-        uplbox.show()
+        self.pack_end(self.song)
+        self.pack_end(self.album)
+        self.pack_end(self.artist)
+        self.pack_end(self.stationButton)
 
-        uprbox = elementary.Box(self.win)
-        uprbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        uprbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        uprbox.pack_end(self.album)
-        uprbox.pack_end(self.stationButton)
-        uprbox.show()
+        mybox = elementary.Box(self.win)
+        mybox.horizontal = True
+        mybox.size_hint_weight_set(1, 1)
+        mybox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
+        mybox.pack_end(self.thumb)
+        mybox.pack_end(self.menubutton)
+        mybox.show()
+        self.pack_end(mybox)
 
-        topbox = elementary.Box(self.win)
-        topbox.horizontal = True
-        topbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        topbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        topbox.pack_end(uplbox)
-        topbox.pack_end(self.thumb)
-        topbox.pack_end(uprbox)
-        topbox.show()
-        self.pack_end(topbox)
-
-        #Middle Row
         thbox = elementary.Box(self.win)
         thbox.horizontal = True
-        thbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        thbox.size_hint_weight_set(.5, .5)
         thbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         thbox.pack_end(pp)
         thbox.pack_end(skip)
-        thbox.pack_end(self.counter)
         thbox.pack_end(self.rating)
         thbox.pack_end(ban)
         thbox.show()
         self.pack_end(thbox)
 
-        #Bottom
-        bbox = elementary.Box(self.win)
-        bbox.horizontal = True
-        bbox.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
-        bbox.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
-        bbox.pack_end(self.menubutton)
-        bbox.pack_end(self.songList)
-        bbox.show()
-
-        self.pack_end(bbox)
+        self.pack_end(self.counter)
+        self.pack_end(self.songList)
 
         self.ourPlayer.addSongs()
 
@@ -334,6 +313,6 @@ class SeekControls(elementary.Label):
         self.text_set("00:00  /  00:00")
         self.show()
 
-        self.size_hint_weight_set(evas.EVAS_HINT_EXPAND, evas.EVAS_HINT_EXPAND)
+        self.size_hint_weight_set(1, 1)
         self.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         self.show()
