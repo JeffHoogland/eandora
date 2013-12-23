@@ -300,7 +300,7 @@ class playerWindow(elementary.Box):
 
     def about(self, menu, item):
         popup = elementary.Popup(self.win)
-        popup.text = "Pandora Internet Radio player written in python and elementary. By: Jeff Hoogland"
+        popup.text = "Pandora Internet Radio player written in python and elementary. Streaming backend: %s By: Jeff Hoogland" %self.rent.backend
         popup.part_text_set("title,text", "About")
         bt = elementary.Button(self.win)
         bt.text = "Close"
