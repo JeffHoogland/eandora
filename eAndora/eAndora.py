@@ -12,7 +12,7 @@ import evas
 import time
 import pandora
 import urllib
-import webbrowser
+import sys
 
 #These are all eAndora pieces broken down into multiple files
 #GUI Windows
@@ -23,10 +23,13 @@ from createWindow import *
 from stationWindow import *
 from renameWindow import *
 #Pandora Backend Interface
-from playerClass import *
+#emotion streaming
+import playerClass
+#VLC streaming
+import playerVLC
 
 class Interface(object):
-    def __init__( self ):
+    def __init__( self, bkend="emotion" ):
         #Main window - where everything other than popups appears
         self.mainWindow = elementary.StandardWindow("eAndora", "eAndora - Internet Radio")
         self.nf = elementary.Naviframe(self.mainWindow)
@@ -36,8 +39,14 @@ class Interface(object):
         self.mainWindow.resize_object_add(self.nf)
         self.mainWindow.callback_delete_request_add(lambda o: elementary.exit())
 
+        #Options are emotion and vlc
+        self.backend = bkend
+
         #Our pandora interface instance
-        self.ourPlayer = eAndora(self)
+        if self.backend == "vlc":
+            self.ourPlayer = playerVLC.eAndora(self)
+        else:
+            self.ourPlayer = playerClass.eAndora(self)
 
         #Location of the PY files for image usage
         self.location = os.path.dirname(os.path.abspath(__file__))
@@ -107,7 +116,10 @@ class Interface(object):
 
 if __name__ == "__main__":
     elementary.init()
-    GUI = Interface()
+    if len(sys.argv) == 1:
+        GUI = Interface()
+    else:
+        GUI = Interface(sys.argv[1])
     GUI.launch()
     elementary.run()    
     elementary.shutdown()

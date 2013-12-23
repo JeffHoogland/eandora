@@ -157,14 +157,21 @@ class playerWindow(elementary.Box):
         self.ourPlayer.addSongs()
 
     def update(self):
-        pos = self.ourPlayer.player.position_get()
+        if self.rent.backend == "vlc":
+            pos = self.ourPlayer.player.get_time() / 1000.0
+        else:
+            pos = self.ourPlayer.player.position_get()
 
         pos = datetime.timedelta(seconds=int(pos))
         self.position = pos
         t = "<b><div align='center'>%s  /  %s</div></b>" % (pos, self.duration)
         self.counter.text_set(t)
 
-        dur = self.ourPlayer.player.play_length
+        if self.rent.backend == "vlc":
+            dur = self.ourPlayer.player.get_length() / 1000.0
+        else:
+            dur = self.ourPlayer.player.play_length
+
         if dur != self.duration:
             dur = datetime.timedelta(seconds=int(dur))
             self.duration = dur
@@ -248,16 +255,29 @@ class playerWindow(elementary.Box):
 
     def play_pause(self, bt):
         ic = elementary.Icon(self.rent.mainWindow)
-        if self.ourPlayer.player.play:
-            ic.file_set("%s/images/play.png"%self.rent.location)
-            self.playtimer.freeze()
-            self.ourPlayer.pauseSong()
-            bt.tooltip_text_set("Play Song")
+        if self.rent.backend == "vlc":
+            if self.ourPlayer.playing:
+                ic.file_set("%s/images/play.png"%self.rent.location)
+                self.playtimer.freeze()
+                self.ourPlayer.pauseSong()
+                bt.tooltip_text_set("Play Song")
+            else:
+                ic.file_set("%s/images/pause.png"%self.rent.location)
+                self.playtimer.thaw()
+                self.ourPlayer.playSong()
+                bt.tooltip_text_set("Pause Song")
+
         else:
-            ic.file_set("%s/images/pause.png"%self.rent.location)
-            self.playtimer.thaw()
-            self.ourPlayer.playSong()
-            bt.tooltip_text_set("Pause Song")
+            if self.ourPlayer.player.play:
+                ic.file_set("%s/images/play.png"%self.rent.location)
+                self.playtimer.freeze()
+                self.ourPlayer.pauseSong()
+                bt.tooltip_text_set("Play Song")
+            else:
+                ic.file_set("%s/images/pause.png"%self.rent.location)
+                self.playtimer.thaw()
+                self.ourPlayer.playSong()
+                bt.tooltip_text_set("Pause Song")
         bt.content_set(ic)
         bt.show()
 
