@@ -55,7 +55,7 @@ class playerWindow(elementary.Box):
         self.songList.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
 
         #Our main menu
-        self.menubutton.size_hint_weight_set(evas.EVAS_HINT_EXPAND/5, evas.EVAS_HINT_EXPAND/5)
+        self.menubutton.size_hint_weight_set(evas.EVAS_HINT_EXPAND/4, evas.EVAS_HINT_EXPAND/4)
         self.menubutton.size_hint_align_set(evas.EVAS_HINT_FILL, evas.EVAS_HINT_FILL)
         item = self.menubutton.item_append("%s/images/eAndora.png"%self.rent.location, "Menu", None, None)
         item.menu_set(True)
