@@ -8,7 +8,6 @@ DownloadPath = "/home/user/MyDocs/pandora/"
 
 if Download:
     import ID3
-    import os.path
 
 def openBrowser(url):
     print "Opening %s"%url
@@ -146,11 +145,11 @@ class eAndora(object):
 
     def check_download( self, url, title, artist, album ):
         if Download:
-            if not os.path.isfile('%s%s.mp3'%(DownloadPath, title)):
-                urllib.urlretrieve(str(url), '%s%s.mp3'%(DownloadPath, title))
-                tag = ID3.ID3('%s%s.mp3'%(DownloadPath, title))
-                tag['ARTIST'] = artist
-                tag['ALBUM'] = album
+            urllib.urlretrieve(str(url), '%s%s.mp3'%(DownloadPath, title))
+            tag = eyeD3.Tag()
+            tag.link('%s%s.mp3'%(DownloadPath, title))
+            tag.setArtist(artist)
+            tag.setAlbum(album)
 
     def nextSong( self , event=False ):
         print("Debug 1")

@@ -1,14 +1,10 @@
-import emotion
+import vlc
 import pandora
 import webbrowser
 import urllib
 
 Download = False
-DownloadPath = "/home/user/MyDocs/pandora/"
-
-if Download:
-    import ID3
-    import os.path
+DownloadPath = "/media/sda5/Music/pandora/"
 
 def openBrowser(url):
     print "Opening %s"%url
@@ -25,6 +21,7 @@ class eAndora(object):
         self.pandora = pandora.Pandora()
         self.curStation = ""
         self.curSong = None
+        self.playing = False
         self.skip = False
         self.die = False
         self.settings = {"username":"", "password":""}
@@ -37,8 +34,9 @@ class eAndora(object):
 
     def setGUI( self, GUI):
         self.gui = GUI
-        self.player = emotion.Emotion(self.gui.rent.mainWindow.evas_get(), module_filename="gstreamer")
-        self.player.callback_add("playback_finished", self.nextSong)
+        self.player = vlc.MediaPlayer()
+        self.event_manager = self.player.event_manager()
+        self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
 
     def auth( self, user, passwd):
         print "User %s - Password %s"%(user, passwd)
@@ -50,10 +48,12 @@ class eAndora(object):
             self.rent.login_error()
 
     def playSong( self ):
-        self.player.play_set(True)
+        self.playing = True
+        self.player.play()
 
     def pauseSong( self ):
-        self.player.play_set(False)
+        self.playing = False
+        self.player.pause()
 
     def skipSong( self ):
         self.nextSong("skip")
@@ -81,7 +81,7 @@ class eAndora(object):
 
     def getSongDuration( self ):
         print "Getting Song duration"
-        seconds = self.player.play_length
+        seconds = self.player.get_length() / 1000.0
         print "Starting Seconds %s"%seconds
         mins = 0
         while seconds >= 60:
@@ -144,19 +144,18 @@ class eAndora(object):
         self.curSong = -1
         self.nextSong()
 
-    def check_download( self, url, title, artist, album ):
+    def check_download( self, url, title ):
         if Download:
-            if not os.path.isfile('%s%s.mp3'%(DownloadPath, title)):
-                urllib.urlretrieve(str(url), '%s%s.mp3'%(DownloadPath, title))
-                tag = ID3.ID3('%s%s.mp3'%(DownloadPath, title))
-                tag['ARTIST'] = artist
-                tag['ALBUM'] = album
+            urllib.urlretrieve(str(url), '%s%s.mp3'%(DownloadPath, title))
 
     def nextSong( self , event=False ):
         print("Debug 1")
-        if self.player:
-            if self.player.play_get():
-                self.player.play_set(False)
+        if self.player.is_playing():
+            self.player.stop()
+        print("Debug 2")
+        self.player = vlc.MediaPlayer()
+        self.event_manager = self.player.event_manager()
+        self.event_manager.event_attach(vlc.EventType.MediaPlayerEndReached,      self.nextSong)
         print("Debug 3")
         self.curSong += 1
         info = self.songinfo[self.curSong]
@@ -164,13 +163,14 @@ class eAndora(object):
         self.song = info['title']
         print(info)
         print("Debug 4")
-        self.player.file = info['url']
-        self.check_download(info['url'], info['title'], info['artist'], info['album'])
+        self.player.set_media(vlc.Media(info['url']))
         print("Debug 5")
-        self.player.play_set(True)
+        self.playing = True
+        self.player.play()
         print("Debug 6")
         self.gui.song_change()
         print("Debug 7")
+        #self.curSong += 1
         if self.curSong >= len(self.songinfo)-1:
             print("Debug 8")
             self.addSongs()

@@ -6,6 +6,10 @@ import urllib
 Download = False
 DownloadPath = "/media/sda5/Music/pandora/"
 
+if Download:
+    import ID3
+    import os.path
+
 def openBrowser(url):
     print "Opening %s"%url
     webbrowser.open(url)
@@ -144,9 +148,13 @@ class eAndora(object):
         self.curSong = -1
         self.nextSong()
 
-    def check_download( self, url, title ):
+    def check_download( self, url, title, artist, album ):
         if Download:
-            urllib.urlretrieve(str(url), '%s%s.mp3'%(DownloadPath, title))
+            if not os.path.isfile('%s%s.mp3'%(DownloadPath, title)):
+                urllib.urlretrieve(str(url), '%s%s.mp3'%(DownloadPath, title))
+                tag = ID3.ID3('%s%s.mp3'%(DownloadPath, title))
+                tag['ARTIST'] = artist
+                tag['ALBUM'] = album
 
     def nextSong( self , event=False ):
         print("Debug 1")
